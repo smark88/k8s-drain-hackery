@@ -158,14 +158,13 @@ if [ $RETRY == false ]; then
     NODES=$(kubectl get node -l $NODEPOOL_LABEL --no-headers | grep $NODE_VERSION_TO_DRAIN | awk '{print $1}')
     echo $NODES > $SCRIPTDIR/lastrun.txt
     drain_nodes
-    cleanup
 elif [[ -f "$SCRIPTDIR/lastrun.txt" && $RETRY == true ]]; then
     printf "%s\n" "${green}Retrying to drain nodes for nodes with label $NODEPOOL_LABEL from lastrun.txt ${end}"
     # get nodes in pool by label count intial ready nodes
     NODES=$(cat $SCRIPTDIR/lastrun.txt)
     drain_nodes
-    cleanup
 else
     printf "%s\n" "${red}Status -- Check for retry file or args something went terrible wrong${end}"
-    cleanup
 fi
+
+cleanup
