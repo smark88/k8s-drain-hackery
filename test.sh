@@ -8,8 +8,6 @@ NODE_ACTIVE_NAMESPACES+=(sampleappd sealed-secrets telegraf-operator twodotoh va
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 tmpfile=$(mktemp $SCRIPTDIR/test.txt)
 exec 3>"$tmpfile"
-NODES=$(cat $SCRIPTDIR/lastrun.txt)
-
-for i in $NODES; do
-    echo $i 
-done
+#NODES=$(cat $SCRIPTDIR/lastrun.txt)
+NODES=$(kubectl get node -l awslabeler.influxdata.com/type=highmem --no-headers | awk '{print $1}')
+printf "$NODES\n" >&3
