@@ -144,20 +144,27 @@ cleanup () {
     [ -s lastrun.txt ] || rm -f $SCRIPTDIR/lastrun.txt
 }
 
-while getopts n:v:r:x: flag
-do
-    case "${flag}" in
-        n) NODEPOOL_NAME=${OPTARG};;
-        v) NODE_VERSION_TO_DRAIN=${OPTARG};;
-        r) REGION=${OPTARG};;
-        x) RETRY=${OPTARG};;
-    esac
-done
+set_vars () {
+    while getopts n:v:r:x: flag
+    do
+        case "${flag}" in
+            n) NODEPOOL_NAME=${OPTARG};;
+            v) NODE_VERSION_TO_DRAIN=${OPTARG};;
+            r) REGION=${OPTARG};;
+            x) RETRY=${OPTARG};;
+        esac
+    done
 
+    if [[ "$NODEPOOL_NAME" == "" || "$NODE_VERSION_TO_DRAIN" == ""|| "$REGION" == ""  ]]; then
+        echo "ERROR: Options -n, -v and -r require arguments." >&2
+        exit 1
+    fi
+}
 
 # drain vars
 NODEPOOL_LABEL="awslabeler.influxdata.com/type=$NODEPOOL_NAME"
 
+set_vars
 if [ $RETRY == false ]; then
     printf "%s\n" "${green}Draining nodes for nodes with label $NODEPOOL_LABEL ${end}"
     # get nodes in pool by label count intial ready nodes
