@@ -51,7 +51,7 @@ drain_nodes() {
     # check second drain exit status if non 0 exit
     drainErrorCode=$?
     if [ $drainErrorCode -ne 0 ]; then
-        printf "%s\n" "${red}Kubectl drain node command exited with non 0${end}"
+        printf "%s\n" "${red}ERROR: Kubectl drain node command exited with non 0${end}"
         exit 126
     fi
     # check if node is unschedulable and check if any namespace from exclusion list are active within `k describe node`
@@ -73,19 +73,19 @@ check_drained () {
         # check for namespace from exclusion list
         for a in ${NODE_ACTIVE_NAMESPACES[@]}; do
         if [[ $NODEDESCRIPTION == *"$a"* ]]; then
-            printf "%s\n" "${red}Status -- Namespace $a present on node check -- FAIL ${end}"
+            printf "%s\n" "${red}ERROR: Status -- Namespace $a present on node check -- FAIL ${end}"
             check_drained_counter=$((check_drained_counter+1))
             # retry if nodes arent fully drain from race condition
             check_drained
             sleep 10
         elif [[ $NODEDESCRIPTION == *"$a"* && "$check_drained_counter" -gt 6 ]]; then
-            printf "%s\n" "${red}Status -- Namespace $a present on node check -- FAIL ${end}"
-            printf "%s\n" "${red}Status -- Counter: $check_drained_counter times reached; Exiting loop!${end}"
+            printf "%s\n" "${red}ERROR: Status -- Namespace $a present on node check -- FAIL ${end}"
+            printf "%s\n" "${red}ERROR: Status -- Counter: $check_drained_counter times reached; Exiting loop!${end}"
             exit 1
         fi
         done
     else     
-        printf "%s\n" "${red}Node should be unschedulable if it was drained${end}" 
+        printf "%s\n" "${red}ERROR: Node should be unschedulable if it was drained${end}" 
         exit 1
     fi
 }
@@ -123,7 +123,7 @@ terminate_node () {
                 NODES_REMAINING=$(cat $SCRIPTDIR/lastrun.txt | wc -l)
                 printf "%s\n" "${green}Status -- Nodes Remaining: $NODES_REMAINING ${end}"
             elif [[ "$terminate_node_counter" -gt 10 ]]; then
-                printf "%s\n" "${red}Counter: $terminate_node_counter times reached; Exiting loop!${end}"
+                printf "%s\n" "${red}ERROR: Counter: $terminate_node_counter times reached; Exiting loop!${end}"
                 exit 1
             else 
                 printf "%s\n" "${blue}Pause 15s while k8 Node Name: $K8_NODE_NAME EC2 Node Name: $NODE is being terminated ${end}"
@@ -134,7 +134,7 @@ terminate_node () {
         }
         check_termination
     else
-        printf "%s\n" "${red}Node should be unschedulable for ec2 termination${end}" 
+        printf "%s\n" "${red}ERROR: Node should be unschedulable for ec2 termination${end}" 
         exit 1
     fi
 }
@@ -156,7 +156,7 @@ set_vars () {
     done
 
     if [[ "$NODEPOOL_NAME" == "" || "$NODE_VERSION_TO_DRAIN" == ""|| "$REGION" == ""  ]]; then
-        echo "ERROR: Options -n, -v and -r require arguments." >&2
+        printf "%s\n" "${red}ERROR: Options -n, -v and -r require arguments.${end}"
         exit 1
     fi
 }
@@ -165,6 +165,7 @@ set_vars () {
 NODEPOOL_LABEL="awslabeler.influxdata.com/type=$NODEPOOL_NAME"
 
 set_vars
+
 if [ $RETRY == false ]; then
     printf "%s\n" "${green}Draining nodes for nodes with label $NODEPOOL_LABEL ${end}"
     # get nodes in pool by label count intial ready nodes
@@ -177,7 +178,7 @@ elif [[ -f "$SCRIPTDIR/lastrun.txt" && $RETRY == true ]]; then
     NODES=$(cat $SCRIPTDIR/lastrun.txt)
     drain_nodes
 else
-    printf "%s\n" "${red}Status -- Check for retry file or args something went terrible wrong${end}"
+    printf "%s\n" "${red}ERROR: Status -- Check for retry file or args something went terrible wrong${end}"
 fi
 
 cleanup
