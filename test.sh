@@ -8,8 +8,8 @@ NODE_ACTIVE_NAMESPACES+=(sampleappd sealed-secrets telegraf-operator twodotoh va
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 tmpfile=$(mktemp $SCRIPTDIR/test.txt)
 exec 3>"$tmpfile"
+NODES=$(cat $SCRIPTDIR/lastrun.txt)
 
-for i in ${NODE_ACTIVE_NAMESPACES[@]}; do
-    echo $i >&3 
- 
+for i in $NODES; do
+    echo $i 
 done

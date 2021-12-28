@@ -26,8 +26,6 @@ end=$'\e[0m'
 check_drained_counter=0
 terminate_node_counter=0
 NODES=""
-tmpfile=$(mktemp $SCRIPTDIR/$date.lastrun.txt)
-exec 3>"$tmpfile"
 
 # defaults
 INITIAL_NODE_COUNT=0
@@ -144,29 +142,21 @@ cleanup () {
     [ -s lastrun.txt ] || rm -f $SCRIPTDIR/lastrun.txt
 }
 
-set_vars () {
-    while getopts n:v:r:x: flag
-    do
-        case "${flag}" in
-            n) NODEPOOL_NAME=${OPTARG};;
-            v) NODE_VERSION_TO_DRAIN=${OPTARG};;
-            r) REGION=${OPTARG};;
-            x) RETRY=${OPTARG};;
-        esac
-    done
+while getopts n:v:r:x: flag
+do
+    case "${flag}" in
+        n) NODEPOOL_NAME=${OPTARG};;
+        v) NODE_VERSION_TO_DRAIN=${OPTARG};;
+        r) REGION=${OPTARG};;
+        x) RETRY=${OPTARG};;
+    esac
+done
 
-    if [[ "$NODEPOOL_NAME" == "" || "$NODE_VERSION_TO_DRAIN" == ""|| "$REGION" == ""  ]]; then
-        printf "%s\n" "${red}ERROR: Options -n, -v and -r require arguments.${end}"
-        exit 1
-    fi
-}
-
-# drain vars
 NODEPOOL_LABEL="awslabeler.influxdata.com/type=$NODEPOOL_NAME"
 
-set_vars
-
 if [ $RETRY == false ]; then
+    tmpfile=$(mktemp $SCRIPTDIR/lastrun.txt)
+    exec 3>"$tmpfile"
     printf "%s\n" "${green}Draining nodes for nodes with label $NODEPOOL_LABEL ${end}"
     # get nodes in pool by label count intial ready nodes
     NODES=$(kubectl get node -l $NODEPOOL_LABEL --no-headers | grep $NODE_VERSION_TO_DRAIN | awk '{print $1}')
