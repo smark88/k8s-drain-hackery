@@ -26,7 +26,8 @@ end=$'\e[0m'
 check_drained_counter=0
 terminate_node_counter=0
 NODES=""
-
+tmpfile=$(mktemp $SCRIPTDIR/$date.lastrun.txt)
+exec 3>"$tmpfile"
 
 # defaults
 INITIAL_NODE_COUNT=0
@@ -36,7 +37,10 @@ RETRY=false
 
 # list of namespaces that should not be on a drained node
 # To-do invert this list to what is espected
-NODE_ACTIVE_NAMESPACES=(argo-events argo-observer argocd argowf cert-manager cloudability cluster-autoscaler computation external-dns functionsd glance ingress iox istio-operator istio-system kafka-operator keda kube-node-lease kube-public kvmigrate newrelic-minion notebooksd ops pinneditemsd pipescope sampleappd sealed-secrets telegraf-operator twodotoh vault vault-secrets-manager velero)
+declare -a NODE_ACTIVE_NAMESPACES
+NODE_ACTIVE_NAMESPACES+=(argo-events argo-observer argocd argowf cert-manager cloudability cluster-autoscaler computation external-dns functionsd glance ingress iox)
+NODE_ACTIVE_NAMESPACES+=(istio-operator istio-system kafka-operator keda kube-node-lease kube-public kvmigrate newrelic-minion notebooksd ops pinneditemsd pipescope)
+NODE_ACTIVE_NAMESPACES+=(sampleappd sealed-secrets telegraf-operator twodotoh vault vault-secrets-manager velero)
 
 drain_nodes() {
     for i in $NODES; do 
@@ -113,7 +117,8 @@ terminate_node () {
             if [ $nodeErrorCode -ne 0 ]; then
                 printf "%s\n" "${blue}k8 Node Name: $K8_NODE_NAME EC2 Node Name: $NODE has been terminated ${end}"
                 # remove node from lastrun.txt as it has been terminated
-                sed -i "" "/$K8_NODE_NAME/d" $SCRIPTDIR/lastrun.txt
+                #sed -i "" "/$K8_NODE_NAME/d" $SCRIPTDIR/lastrun.txt
+                sed -i "d/$K8_NODE_NAME/" $SCRIPTDIR/lastrun.txt
                 NODES_REMAINING=$(cat $SCRIPTDIR/lastrun.txt | wc -l)
                 printf "%s\n" "${green}Status -- Nodes Remaining: $NODES_REMAINING ${end}"
             elif [[ "$terminate_node_counter" -gt 10 ]]; then
@@ -156,7 +161,7 @@ if [ $RETRY == false ]; then
     printf "%s\n" "${green}Draining nodes for nodes with label $NODEPOOL_LABEL ${end}"
     # get nodes in pool by label count intial ready nodes
     NODES=$(kubectl get node -l $NODEPOOL_LABEL --no-headers | grep $NODE_VERSION_TO_DRAIN | awk '{print $1}')
-    echo $NODES > $SCRIPTDIR/lastrun.txt
+    echo $NODES >&3
     drain_nodes
 elif [[ -f "$SCRIPTDIR/lastrun.txt" && $RETRY == true ]]; then
     printf "%s\n" "${green}Retrying to drain nodes for nodes with label $NODEPOOL_LABEL from lastrun.txt ${end}"
