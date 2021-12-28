@@ -117,8 +117,9 @@ terminate_node () {
             if [ $nodeErrorCode -ne 0 ]; then
                 printf "%s\n" "${blue}k8 Node Name: $K8_NODE_NAME EC2 Node Name: $NODE has been terminated ${end}"
                 # remove node from lastrun.txt as it has been terminated
-                #sed -i "" "/$K8_NODE_NAME/d" $SCRIPTDIR/lastrun.txt
-                sed -i "d/$K8_NODE_NAME/" $SCRIPTDIR/lastrun.txt
+                sed -i "" "/$K8_NODE_NAME/d" $SCRIPTDIR/lastrun.txt
+                # below does not work on macos
+                #sed -i "/$K8_NODE_NAME/d" $SCRIPTDIR/lastrun.txt
                 NODES_REMAINING=$(cat $SCRIPTDIR/lastrun.txt | wc -l)
                 printf "%s\n" "${green}Status -- Nodes Remaining: $NODES_REMAINING ${end}"
             elif [[ "$terminate_node_counter" -gt 10 ]]; then
